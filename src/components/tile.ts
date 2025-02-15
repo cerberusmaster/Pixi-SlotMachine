@@ -9,7 +9,7 @@ export class Tile extends Container {
 
     private border: Graphics;
     private sprite: Sprite = new Sprite();
-    private spine: Spine = null;
+    private spine: Spine;
 
     constructor(width: number, height: number) {
         super();
@@ -51,8 +51,8 @@ export class Tile extends Container {
         }
     }
 
-    public swap(): void {
-        this.id = Math.floor(Math.random() * data.symbols.length);
+    public swap(tid?: number): void {
+        this.id = tid ?? Math.floor(Math.random() * data.symbols.length);
         const t = data.symbols[this.id];
         if (t.texture) {
             // get a random symbol id

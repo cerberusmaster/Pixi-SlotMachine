@@ -11,6 +11,9 @@ export class Reel extends Container {
     public id: number;
     public tiles: Tile[];
 
+    private finalOrders = [1, 2, 3, 4, 5];
+    private foi = 0;
+
     private realWidth: number;
     private realHeight: number;
     private tileHeight: number;
@@ -19,6 +22,7 @@ export class Reel extends Container {
     private timeStop: number = 0;
     private spinning: boolean = false;
     private stopping: boolean = false;
+    private finalizing: boolean = false;
     private blurFilter: BlurFilter;
 
     private finalOffset: number = 0;
@@ -54,21 +58,20 @@ export class Reel extends Container {
         this.filters = [this.blurFilter];
     }
 
-    public spin(): void {
+    public spin(orders: []): void {
         this.time = 0;
         this.spinning = true;
 
         // applies blur filter
         this.blurFilter.blurYFilter.strength = 0;
         this.filters = [this.blurFilter];
+        
+        this.foi = Reel.totalTiles;
+        this.finalOrders = [0, 1, 2, 3, 4];
     }
 
     public stop(): void {
-        this.finalOffset = 1;
-        this.finalPosition =
-            this.realHeight - this.tileHeight - this.container.children[0].y;
-        this.stopping = true;
-        this.timeStop = this.time;
+        this.finalizing = true;
     }
 
     public update(delta: number): void {
@@ -87,17 +90,29 @@ export class Reel extends Container {
 
         const limitY: number = this.realHeight + this.tileHeight;
         for (let i: number = this.tiles.length - 1; i >= 0; i--) {
+            
             if (this.container.y + this.tiles[i].y > limitY) {
                 this.tiles[i].y = this.container.children[0].y - this.tileHeight;
                 this.container.addChildAt(this.tiles[i], 0);
-                this.tiles[i].swap();
+                if (this.finalizing === true) {
+                    // console.log(j)
+                    this.tiles[i].swap(this.finalOrders[this.foi]);
+                    // console.log(this.id, i, this.foi)
+                    this.foi --;
+                    if (this.foi === -1) {
+                        this.finalizing = false;
+                        this.stopping = true;
+                        this.finalOffset = 1;
+                        this.finalPosition = this.realHeight - this.tileHeight - this.container.children[0].y;
+                        this.timeStop = this.time;
+                    }
+                } else if (!this.stopping) this.tiles[i].swap();
             }
         }
     }
 
     private getSpeed(delta: number): number {
         let speed = delta * Reel.reelMaxSpeed;
-
         if (this.stopping) {
             const n = 1 - (this.time - this.timeStop) / Reel.outTime;
             const r = this.easeInBack(n);
@@ -123,6 +138,8 @@ export class Reel extends Container {
 
         // removes blur filter
         this.filters = [];
+
+        console.log(this.tiles.map(t => t.id).join(", "))
     }
 
     private reorderTiles(): void {
